@@ -1,0 +1,22 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/credentials.toml
+
+# Testing
+.pytest_cache/
+
+# Environment variables
+.env
