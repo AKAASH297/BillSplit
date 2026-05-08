@@ -21,8 +21,7 @@ A single-session Streamlit app that turns a photo of a restaurant receipt into a
 | Layer | Technology |
 |---|---|
 | UI + server | Python 3.11+ · Streamlit ≥ 1.30 |
-| VLM (local) | Qwen 3.5 9B via Ollama (OpenAI-compatible) |
-| VLM (cloud) | OpenRouter (`qwen/qwen3.5-vl-7b-instruct`) |
+| VLM (default) | OpenRouter (`google/gemini-2.5-flash`) |
 | Image handling | Pillow |
 
 ---
@@ -49,40 +48,28 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Start a local VLM (optional — skip for cloud)
-
-```bash
-ollama run qwen3.5:9b
-```
-
-### 5. Run the app
+### 4. Run the app
 
 ```bash
 streamlit run app.py
 ```
 
-The app opens at **http://localhost:8501**.
+The app opens at **http://localhost:8501**. You can configure your VLM settings (API key, model, endpoint) directly in Step 1 of the app.
 
 ---
 
 ## Configuration
 
-VLM settings live in `vlm.py` and are controlled by the `ENV` environment variable.
+VLM settings are fully configurable through the UI in **Step 1 — Names**. 
+Expand the **⚙️ VLM / AI Settings** section to input your Base URL, Model, and API Key.
 
-| `ENV` value | Endpoint | Model |
-|---|---|---|
-| `local` (default) | `http://localhost:11434/v1` (Ollama) | `qwen3.5:9b` |
-| `production` | `https://openrouter.ai/api/v1` | `qwen/qwen3.5-vl-7b-instruct` |
+| Setting | Default |
+|---|---|
+| Base URL | `https://openrouter.ai/api/v1` (OpenRouter) |
+| Model | `google/gemini-2.5-flash` |
+| API Key | (Empty, user must provide) |
 
 To change the currency symbol, edit `CURRENCY_SYMBOL` in `logic.py`.
-
-### Switch to production / OpenRouter
-
-```bash
-export ENV=production
-export OPENROUTER_API_KEY=sk-or-...
-streamlit run app.py
-```
 
 ---
 
@@ -139,12 +126,14 @@ class Person:
 
 ---
 
-## Tax Logic
+## Math & Splitting Logic
 
-| Tax type | Where it appears on the bill | How it's split |
+| Type | Where it appears on the bill | How it's split |
 |---|---|---|
 | Per-item tax (`item.tax`) | Printed next to the line item | Added to that item's cost before dividing among assignees |
-| Global tax | Lump sum at the bottom | Divided equally across **all** people |
+| Global tax | Lump sum at the bottom | Combined with service charge and divided equally across **all** people |
+| Service Charge | Lump sum at the bottom | Combined with global tax and divided equally across **all** people |
+| Discount | Lump sum at the bottom | Divided equally across **all** people and deducted from their shares |
 | Tip | User-entered | Divided equally across **all** people |
 
 Both per-item and global tax can coexist on the same bill.
@@ -161,7 +150,9 @@ The parser instructs the model to return **only raw JSON** (no markdown, no prea
     {"name": "Margherita Pizza", "quantity": 2, "unit_price": 12.50, "tax": null},
     {"name": "Coke",             "quantity": 1, "unit_price":  3.00, "tax": 0.45}
   ],
-  "tax": 4.20
+  "tax": 4.20,
+  "service_charge": 5.00,
+  "discount": 0.00
 }
 ```
 
@@ -176,4 +167,4 @@ The parser instructs the model to return **only raw JSON** (no markdown, no prea
 - **No database, no auth, no history** — all state is `st.session_state` and disappears on page refresh.
 - The `.venv/` directory is gitignored. Always activate it before running the app.
 - To add a new currency, change `CURRENCY_SYMBOL` in `logic.py` — it propagates everywhere via the import.
-- To swap the VLM model, edit `_VLM_CONFIG` in `vlm.py` — no code changes elsewhere needed.
+- VLM defaults can be altered by editing `DEFAULT_BASE_URL` and `DEFAULT_MODEL` in `vlm.py`.
