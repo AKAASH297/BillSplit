@@ -53,6 +53,13 @@ def render_names() -> None:
         current_provider = st.session_state.get("vlm_provider", "Custom")
         current_idx = provider_names.index(current_provider) if current_provider in provider_names else 0
 
+        # Ensure per-provider API key slots exist in session state
+        for pname, preset in PROVIDER_PRESETS.items():
+            key_slot = f"vlm_api_key_{pname}"
+            if key_slot not in st.session_state:
+                st.session_state[key_slot] = st.session_state.get("vlm_api_key", preset["api_key"]) \
+                    if pname == current_provider else preset["api_key"]
+
         provider = st.selectbox(
             "Provider",
             options=provider_names,
@@ -61,26 +68,35 @@ def render_names() -> None:
             help="Choose a preset or configure a custom endpoint.",
         )
 
-        # When provider changes, fill in preset values
+        # When provider changes, save old key, load new preset + its saved key
         if provider != st.session_state.get("vlm_provider"):
+            old_provider = st.session_state.get("vlm_provider", "Custom")
+            # Persist the key the user typed for the OLD provider
+            st.session_state[f"vlm_api_key_{old_provider}"] = st.session_state.get("vlm_api_key", "")
+
             preset = PROVIDER_PRESETS[provider]
             st.session_state["vlm_provider"] = provider
             st.session_state["vlm_base_url"] = preset["base_url"]
             st.session_state["vlm_model"] = preset["model"]
-            st.session_state["vlm_api_key"] = preset["api_key"]
+            # Restore the previously saved key for the NEW provider
+            st.session_state["vlm_api_key"] = st.session_state.get(
+                f"vlm_api_key_{provider}", preset["api_key"]
+            )
             st.rerun()
 
-        st.text_input(
-            "Base URL",
-            key="vlm_base_url",
-            help="OpenAI-compatible API base URL.",
-        )
-
-        st.text_input(
-            "Model",
-            key="vlm_model",
-            help="Model identifier (e.g. qwen3.5:9b).",
-        )
+        col_url, col_model = st.columns(2)
+        with col_url:
+            st.text_input(
+                "Base URL",
+                key="vlm_base_url",
+                help="OpenAI-compatible API base URL.",
+            )
+        with col_model:
+            st.text_input(
+                "Model",
+                key="vlm_model",
+                help="Model identifier (e.g. qwen3.5:9b).",
+            )
 
         st.text_input(
             "API Key",

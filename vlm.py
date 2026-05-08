@@ -19,7 +19,7 @@ PROVIDER_PRESETS = {
     },
     "OpenRouter": {
         "base_url": "https://openrouter.ai/api/v1",
-        "model": "qwen/qwen3.5-vl-7b-instruct",
+        "model": "google/gemini-2.5-flash-image",
         "api_key": "",
     },
 }
