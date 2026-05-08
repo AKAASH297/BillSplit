@@ -49,34 +49,32 @@ def render_names() -> None:
     with st.expander("⚙️ VLM / AI Settings", expanded=False):
         st.caption("Configure the Vision Language Model used for receipt parsing.")
 
-        # Initialise defaults on first run
-        if "vlm_base_url" not in st.session_state:
-            st.session_state["vlm_base_url"] = DEFAULT_BASE_URL
-        if "vlm_model" not in st.session_state:
-            st.session_state["vlm_model"] = DEFAULT_MODEL
-        if "vlm_api_key" not in st.session_state:
-            st.session_state["vlm_api_key"] = DEFAULT_API_KEY
-
         col_url, col_model = st.columns(2)
         with col_url:
-            st.text_input(
+            base_url = st.text_input(
                 "Base URL",
-                key="vlm_base_url",
+                value=st.session_state.get("vlm_base_url", DEFAULT_BASE_URL),
+                key="_w_vlm_base_url",
                 help="OpenAI-compatible API base URL (default: OpenRouter).",
             )
+            st.session_state["vlm_base_url"] = base_url
         with col_model:
-            st.text_input(
+            model = st.text_input(
                 "Model",
-                key="vlm_model",
+                value=st.session_state.get("vlm_model", DEFAULT_MODEL),
+                key="_w_vlm_model",
                 help="Model identifier (e.g. google/gemini-2.5-flash-image).",
             )
+            st.session_state["vlm_model"] = model
 
-        st.text_input(
+        api_key = st.text_input(
             "API Key",
-            key="vlm_api_key",
+            value=st.session_state.get("vlm_api_key", DEFAULT_API_KEY),
+            key="_w_vlm_api_key",
             type="password",
             help="API key for the endpoint.",
         )
+        st.session_state["vlm_api_key"] = api_key
 
     col_left, col_right = st.columns([3, 1])
     with col_right:
