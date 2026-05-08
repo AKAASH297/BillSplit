@@ -317,12 +317,27 @@ def render_review() -> None:
     n = len(st.session_state.get("people", []))
     if n > 0 and (global_tax > 0 or service_charge > 0 or discount > 0):
         tax_and_service = global_tax + service_charge
-        parts = []
+        rows = []
         if tax_and_service > 0:
-            parts.append(f"**{CURRENCY_SYMBOL}{tax_and_service:.2f}** tax & service charge → **{CURRENCY_SYMBOL}{tax_and_service/n:.2f}** / person")
+            rows.append(
+                f'<div style="margin-bottom:4px;">'
+                f'<span style="font-weight:700;">{CURRENCY_SYMBOL}{tax_and_service:.2f}</span>'
+                f' tax &amp; service charge &rarr; '
+                f'<span style="font-weight:700;">{CURRENCY_SYMBOL}{tax_and_service/n:.2f}</span>'
+                f' / person</div>'
+            )
         if discount > 0:
-            parts.append(f"**−{CURRENCY_SYMBOL}{discount:.2f}** discount → −**{CURRENCY_SYMBOL}{discount/n:.2f}** / person")
-        st.info("  \n".join(parts))
+            rows.append(
+                f'<div>'
+                f'<span style="font-weight:700;">&minus;{CURRENCY_SYMBOL}{discount:.2f}</span>'
+                f' discount &rarr; &minus;<span style="font-weight:700;">{CURRENCY_SYMBOL}{discount/n:.2f}</span>'
+                f' / person</div>'
+            )
+        st.markdown(
+            f'<div style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);'
+            f'border-radius:8px;padding:12px 16px;font-size:0.9rem;color:#e2e8f0;">{" ".join(rows)}</div>',
+            unsafe_allow_html=True,
+        )
 
     col_back, _, col_next = st.columns([1, 4, 1])
     with col_back:
