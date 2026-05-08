@@ -127,10 +127,12 @@ def _render_upload_ui() -> None:
             st.session_state.pop("vlm_error", None)
             with st.spinner("Sending to VLM — this may take a few seconds…"):
                 try:
-                    items, global_tax = parse_receipt(image_bytes)
+                    items, global_tax, service_charge, discount = parse_receipt(image_bytes)
                     validate_items(items)
                     st.session_state["items"] = items
                     st.session_state["global_tax"] = global_tax
+                    st.session_state["service_charge"] = service_charge
+                    st.session_state["discount"] = discount
                     st.session_state["manual_mode"] = False
                     st.session_state["step"] = 3
                     st.rerun()
