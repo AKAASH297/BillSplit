@@ -112,6 +112,7 @@ def _render_upload_ui() -> None:
     col_back, _, col_parse = st.columns([1, 3, 1])
     with col_back:
         if st.button("← Back", use_container_width=True):
+            st.session_state.pop("vlm_error", None)
             st.session_state["step"] = 1
             st.rerun()
 
@@ -123,6 +124,7 @@ def _render_upload_ui() -> None:
             parse_clicked = st.button("Parse →", type="primary", use_container_width=True)
 
         if parse_clicked:
+            st.session_state.pop("vlm_error", None)
             with st.spinner("Sending to VLM — this may take a few seconds…"):
                 try:
                     items, global_tax = parse_receipt(image_bytes)
@@ -133,15 +135,28 @@ def _render_upload_ui() -> None:
                     st.session_state["step"] = 3
                     st.rerun()
                 except VLMError as e:
-                    st.error(f"**VLM parsing failed.** Switching to manual entry.\n\n_{e}_")
+                    st.session_state["vlm_error"] = str(e)
+                    st.rerun()
+
+        # Show persistent error below the image
+        if "vlm_error" in st.session_state:
+            err = st.session_state["vlm_error"]
+            st.error(f"**API / VLM error:**\n\n{err}")
+            col_retry, col_manual = st.columns(2)
+            with col_manual:
+                if st.button("✏️ Switch to manual entry", use_container_width=True):
+                    st.session_state.pop("vlm_error", None)
                     st.session_state["manual_mode"] = True
                     st.session_state["items"] = []
                     st.rerun()
+
     else:
+        st.session_state.pop("vlm_error", None)
         st.info("Upload an image to continue, or switch to manual entry below.")
 
     st.divider()
     if st.button("✏️ Enter items manually instead", use_container_width=True):
+        st.session_state.pop("vlm_error", None)
         st.session_state["manual_mode"] = True
         st.session_state["items"] = []
         st.rerun()

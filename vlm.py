@@ -16,6 +16,10 @@ DEFAULT_MODEL = "google/gemini-2.5-flash"
 DEFAULT_API_KEY = ""
 
 
+class VLMError(Exception):
+    pass
+
+
 def _get_active_config() -> dict:
     """Return the active VLM config dict from session state."""
     return {
@@ -27,8 +31,8 @@ def _get_active_config() -> dict:
 
 def _get_client() -> OpenAI:
     cfg = _get_active_config()
-    if not cfg["api_key"]:
-        raise VLMError("API key is not set. Please enter your API key in the VLM Settings on Step 1.")
+    if not cfg["api_key"].strip():
+        raise VLMError("API key is not set. Please enter your API key in ⚙️ VLM Settings on Step 1.")
     return OpenAI(
         base_url=cfg["base_url"],
         api_key=cfg["api_key"],
@@ -37,10 +41,6 @@ def _get_client() -> OpenAI:
             "X-Title": "BillSplit",
         },
     )
-
-
-class VLMError(Exception):
-    pass
 
 
 _RECEIPT_PROMPT = (
