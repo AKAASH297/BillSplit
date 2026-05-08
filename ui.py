@@ -4,7 +4,7 @@ ui.py — All step renderers for the BillSplit wizard.
 import streamlit as st
 
 from logic import Item, Person, CURRENCY_SYMBOL, validate_items, calculate_split
-from vlm import parse_receipt, VLMError, PROVIDER_PRESETS
+from vlm import parse_receipt, VLMError, DEFAULT_BASE_URL, DEFAULT_MODEL, DEFAULT_API_KEY
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -49,60 +49,33 @@ def render_names() -> None:
     with st.expander("⚙️ VLM / AI Settings", expanded=False):
         st.caption("Configure the Vision Language Model used for receipt parsing.")
 
-        provider_names = list(PROVIDER_PRESETS.keys())
-        current_provider = st.session_state.get("vlm_provider", "Custom")
-        current_idx = provider_names.index(current_provider) if current_provider in provider_names else 0
-
-        # Ensure per-provider API key slots exist in session state
-        for pname, preset in PROVIDER_PRESETS.items():
-            key_slot = f"vlm_api_key_{pname}"
-            if key_slot not in st.session_state:
-                st.session_state[key_slot] = st.session_state.get("vlm_api_key", preset["api_key"]) \
-                    if pname == current_provider else preset["api_key"]
-
-        provider = st.selectbox(
-            "Provider",
-            options=provider_names,
-            index=current_idx,
-            key="vlm_provider_select",
-            help="Choose a preset or configure a custom endpoint.",
-        )
-
-        # When provider changes, save old key, load new preset + its saved key
-        if provider != st.session_state.get("vlm_provider"):
-            old_provider = st.session_state.get("vlm_provider", "Custom")
-            # Persist the key the user typed for the OLD provider
-            st.session_state[f"vlm_api_key_{old_provider}"] = st.session_state.get("vlm_api_key", "")
-
-            preset = PROVIDER_PRESETS[provider]
-            st.session_state["vlm_provider"] = provider
-            st.session_state["vlm_base_url"] = preset["base_url"]
-            st.session_state["vlm_model"] = preset["model"]
-            # Restore the previously saved key for the NEW provider
-            st.session_state["vlm_api_key"] = st.session_state.get(
-                f"vlm_api_key_{provider}", preset["api_key"]
-            )
-            st.rerun()
+        # Initialise defaults on first run
+        if "vlm_base_url" not in st.session_state:
+            st.session_state["vlm_base_url"] = DEFAULT_BASE_URL
+        if "vlm_model" not in st.session_state:
+            st.session_state["vlm_model"] = DEFAULT_MODEL
+        if "vlm_api_key" not in st.session_state:
+            st.session_state["vlm_api_key"] = DEFAULT_API_KEY
 
         col_url, col_model = st.columns(2)
         with col_url:
             st.text_input(
                 "Base URL",
                 key="vlm_base_url",
-                help="OpenAI-compatible API base URL.",
+                help="OpenAI-compatible API base URL (default: OpenRouter).",
             )
         with col_model:
             st.text_input(
                 "Model",
                 key="vlm_model",
-                help="Model identifier (e.g. qwen3.5:9b).",
+                help="Model identifier (e.g. google/gemini-2.5-flash-image).",
             )
 
         st.text_input(
             "API Key",
             key="vlm_api_key",
             type="password",
-            help="API key for the provider. Leave as-is for local endpoints.",
+            help="API key for the endpoint.",
         )
 
     col_left, col_right = st.columns([3, 1])

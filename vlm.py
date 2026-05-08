@@ -10,27 +10,18 @@ from openai import OpenAI
 from logic import Item
 
 
-# Provider presets — used by the sidebar UI in app.py
-PROVIDER_PRESETS = {
-    "Custom": {
-        "base_url": "http://localhost:8033/v1",
-        "model": "qwen3.5:9b",
-        "api_key": "llamacpp",
-    },
-    "OpenRouter": {
-        "base_url": "https://openrouter.ai/api/v1",
-        "model": "google/gemini-2.5-flash-image",
-        "api_key": "",
-    },
-}
+# Default VLM settings (OpenRouter)
+DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_MODEL = "google/gemini-2.5-flash-image"
+DEFAULT_API_KEY = ""
 
 
 def _get_active_config() -> dict:
     """Return the active VLM config dict from session state."""
     return {
-        "base_url": st.session_state.get("vlm_base_url", "http://localhost:8033/v1"),
-        "model": st.session_state.get("vlm_model", "qwen3.5:9b"),
-        "api_key": st.session_state.get("vlm_api_key", "llamacpp"),
+        "base_url": st.session_state.get("vlm_base_url", DEFAULT_BASE_URL),
+        "model": st.session_state.get("vlm_model", DEFAULT_MODEL),
+        "api_key": st.session_state.get("vlm_api_key", DEFAULT_API_KEY),
     }
 
 

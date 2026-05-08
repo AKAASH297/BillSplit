@@ -178,7 +178,7 @@ st.markdown(
 )
 
 # ── Session state defaults ──────────────────────────────────────────────────────
-from vlm import PROVIDER_PRESETS
+from vlm import DEFAULT_BASE_URL, DEFAULT_MODEL, DEFAULT_API_KEY
 
 DEFAULTS: dict = {
     "step": 1,
@@ -189,10 +189,9 @@ DEFAULTS: dict = {
     "tip": 0.0,
     "result_people": [],
     "manual_mode": False,
-    "vlm_provider": "Custom",
-    "vlm_base_url": PROVIDER_PRESETS["Custom"]["base_url"],
-    "vlm_model": PROVIDER_PRESETS["Custom"]["model"],
-    "vlm_api_key": PROVIDER_PRESETS["Custom"]["api_key"],
+    "vlm_base_url": DEFAULT_BASE_URL,
+    "vlm_model": DEFAULT_MODEL,
+    "vlm_api_key": DEFAULT_API_KEY,
 }
 
 for key, val in DEFAULTS.items():
