@@ -8,7 +8,7 @@ Splitting rules:
 """
 from dataclasses import dataclass, field
 
-CURRENCY_SYMBOL = "$"
+CURRENCY_SYMBOL = "₹"
 
 
 # ── Data models ────────────────────────────────────────────────────────────────
