@@ -185,6 +185,8 @@ DEFAULTS: dict = {
     "people": [],
     "items": [],
     "global_tax": 0.0,
+    "service_charge": 0.0,
+    "discount": 0.0,
     "assignments": {},
     "tip": 0.0,
     "result_people": [],

@@ -286,12 +286,41 @@ def render_review() -> None:
     st.divider()
 
     global_tax = st.number_input(
-        f"Global tax ({CURRENCY_SYMBOL}) — from bottom of bill",
+        f"Tax ({CURRENCY_SYMBOL}) — from bottom of bill",
         value=float(st.session_state.get("global_tax", 0.0)),
         min_value=0.0, step=0.01, format="%.2f",
-        help="This will be split evenly across all people.",
+        help="Combined with service charge and split evenly across all people.",
     )
     st.session_state["global_tax"] = global_tax
+
+    col_sc, col_disc = st.columns(2)
+    with col_sc:
+        service_charge = st.number_input(
+            f"Service Charge ({CURRENCY_SYMBOL})",
+            value=float(st.session_state.get("service_charge", 0.0)),
+            min_value=0.0, step=0.01, format="%.2f",
+            help="Combined with tax and split evenly across all people.",
+        )
+        st.session_state["service_charge"] = service_charge
+    with col_disc:
+        discount = st.number_input(
+            f"Discount ({CURRENCY_SYMBOL})",
+            value=float(st.session_state.get("discount", 0.0)),
+            min_value=0.0, step=0.01, format="%.2f",
+            help="Split equally and deducted from everyone's share.",
+        )
+        st.session_state["discount"] = discount
+
+    # Show a summary of what will be split evenly
+    n = len(st.session_state.get("people", []))
+    if n > 0 and (global_tax > 0 or service_charge > 0 or discount > 0):
+        tax_and_service = global_tax + service_charge
+        parts = []
+        if tax_and_service > 0:
+            parts.append(f"**{CURRENCY_SYMBOL}{tax_and_service:.2f}** tax & service charge → **{CURRENCY_SYMBOL}{tax_and_service/n:.2f}**/person")
+        if discount > 0:
+            parts.append(f"**−{CURRENCY_SYMBOL}{discount:.2f}** discount → −**{CURRENCY_SYMBOL}{discount/n:.2f}**/person")
+        st.info("  \n".join(parts))
 
     col_back, _, col_next = st.columns([1, 4, 1])
     with col_back:
@@ -472,7 +501,11 @@ def render_tip() -> None:
             assignments = st.session_state.get("assignments", {})
             people_names = st.session_state.get("people", [])
             global_tax = st.session_state.get("global_tax", 0.0)
-            st.session_state["result_people"] = calculate_split(items, assignments, people_names, global_tax, tip)
+            service_charge = st.session_state.get("service_charge", 0.0)
+            discount = st.session_state.get("discount", 0.0)
+            st.session_state["result_people"] = calculate_split(
+                items, assignments, people_names, global_tax, service_charge, discount, tip
+            )
             st.session_state["step"] = 6
             st.rerun()
 
@@ -486,6 +519,8 @@ def render_results() -> None:
 
     result_people: list[Person] = st.session_state.get("result_people", [])
     global_tax: float = st.session_state.get("global_tax", 0.0)
+    service_charge: float = st.session_state.get("service_charge", 0.0)
+    discount: float = st.session_state.get("discount", 0.0)
     tip: float = st.session_state.get("tip", 0.0)
 
     if not result_people:
@@ -499,13 +534,21 @@ def render_results() -> None:
 
     # Grand total banner
     tax_tip_line = ""
-    if global_tax > 0 or tip > 0:
-        parts = []
-        if global_tax > 0:
-            parts.append(f"{CURRENCY_SYMBOL}{global_tax:.2f} global tax")
-        if tip > 0:
-            parts.append(f"{CURRENCY_SYMBOL}{tip:.2f} tip")
-        tax_tip_line = f'<div style="font-size:0.8rem;color:#64748b;margin-top:4px;">Includes {" &amp; ".join(parts)}</div>'
+    summary_parts = []
+    if global_tax > 0 or service_charge > 0:
+        tax_and_service = global_tax + service_charge
+        if global_tax > 0 and service_charge > 0:
+            summary_parts.append(f"{CURRENCY_SYMBOL}{tax_and_service:.2f} tax & service charge")
+        elif global_tax > 0:
+            summary_parts.append(f"{CURRENCY_SYMBOL}{global_tax:.2f} tax")
+        else:
+            summary_parts.append(f"{CURRENCY_SYMBOL}{service_charge:.2f} service charge")
+    if discount > 0:
+        summary_parts.append(f"−{CURRENCY_SYMBOL}{discount:.2f} discount")
+    if tip > 0:
+        summary_parts.append(f"{CURRENCY_SYMBOL}{tip:.2f} tip")
+    if summary_parts:
+        tax_tip_line = f'<div style="font-size:0.8rem;color:#64748b;margin-top:4px;">Includes {" &amp; ".join(summary_parts)}</div>'
 
     grand_total_html = (
         f'<div class="card" style="text-align:center;border-color:rgba(99,102,241,0.4);">'
@@ -541,14 +584,25 @@ def render_results() -> None:
                 continue
             for item, share in person.items:
                 col_label, col_amount = st.columns([5, 1])
-                is_special = item.name in ("Tax (global)", "Tip")
-                display = (
-                    f'<span style="color:#94a3b8;font-style:italic;">{item.name}</span>'
-                    if is_special else f"<span>{item.name}</span>"
-                )
+                is_special = item.name in ("Tax & Service Charge", "Tax", "Service Charge", "Discount", "Tip")
+                is_discount = item.name == "Discount"
+                if is_discount:
+                    display = f'<span style="color:#34d399;font-style:italic;">{item.name}</span>'
+                    amount_style = 'text-align:right;font-weight:600;color:#34d399;'
+                elif is_special:
+                    display = f'<span style="color:#94a3b8;font-style:italic;">{item.name}</span>'
+                    amount_style = 'text-align:right;font-weight:600;'
+                else:
+                    display = f'<span>{item.name}</span>'
+                    amount_style = 'text-align:right;font-weight:600;'
                 col_label.markdown(display, unsafe_allow_html=True)
+                # Format amount: discount share is negative, render as −$X.XX
+                if is_discount:
+                    amount_str = f"\u2212{CURRENCY_SYMBOL}{abs(share):.2f}"
+                else:
+                    amount_str = f"{CURRENCY_SYMBOL}{share:.2f}"
                 col_amount.markdown(
-                    f'<div style="text-align:right;font-weight:600;">{CURRENCY_SYMBOL}{share:.2f}</div>',
+                    f'<div style="{amount_style}">{amount_str}</div>',
                     unsafe_allow_html=True,
                 )
             st.divider()
@@ -564,8 +618,8 @@ def render_results() -> None:
     _, _, col_reset = st.columns([2, 4, 1])
     with col_reset:
         if st.button("🔄 Start Over", use_container_width=True, type="secondary"):
-            for key in ["step", "people", "items", "global_tax", "assignments",
-                        "tip", "result_people", "manual_mode", "manual_items", "assign_cursor"]:
+            for key in ["step", "people", "items", "global_tax", "service_charge", "discount",
+                        "assignments", "tip", "result_people", "manual_mode", "manual_items", "assign_cursor"]:
                 if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
