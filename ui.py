@@ -319,9 +319,9 @@ def render_review() -> None:
         tax_and_service = global_tax + service_charge
         parts = []
         if tax_and_service > 0:
-            parts.append(f"**{CURRENCY_SYMBOL}{tax_and_service:.2f}** tax & service charge → **{CURRENCY_SYMBOL}{tax_and_service/n:.2f}**/person")
+            parts.append(f"**{CURRENCY_SYMBOL}{tax_and_service:.2f}** tax & service charge → **{CURRENCY_SYMBOL}{tax_and_service/n:.2f}** / person")
         if discount > 0:
-            parts.append(f"**−{CURRENCY_SYMBOL}{discount:.2f}** discount → −**{CURRENCY_SYMBOL}{discount/n:.2f}**/person")
+            parts.append(f"**−{CURRENCY_SYMBOL}{discount:.2f}** discount → −**{CURRENCY_SYMBOL}{discount/n:.2f}** / person")
         st.info("  \n".join(parts))
 
     col_back, _, col_next = st.columns([1, 4, 1])
@@ -540,13 +540,13 @@ def render_results() -> None:
     if global_tax > 0 or service_charge > 0:
         tax_and_service = global_tax + service_charge
         if global_tax > 0 and service_charge > 0:
-            summary_parts.append(f"{CURRENCY_SYMBOL}{tax_and_service:.2f} tax & service charge")
+            summary_parts.append(f"{CURRENCY_SYMBOL}{tax_and_service:.2f} tax &amp; service charge")
         elif global_tax > 0:
             summary_parts.append(f"{CURRENCY_SYMBOL}{global_tax:.2f} tax")
         else:
             summary_parts.append(f"{CURRENCY_SYMBOL}{service_charge:.2f} service charge")
     if discount > 0:
-        summary_parts.append(f"−{CURRENCY_SYMBOL}{discount:.2f} discount")
+        summary_parts.append(f"&minus;{CURRENCY_SYMBOL}{discount:.2f} discount")
     if tip > 0:
         summary_parts.append(f"{CURRENCY_SYMBOL}{tip:.2f} tip")
     if summary_parts:
