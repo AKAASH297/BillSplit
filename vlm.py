@@ -12,7 +12,7 @@ from logic import Item
 
 # Default VLM settings (OpenRouter)
 DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
-DEFAULT_MODEL = "google/gemini-2.5-flash-image"
+DEFAULT_MODEL = "google/gemini-2.5-flash"
 DEFAULT_API_KEY = ""
 
 
@@ -27,7 +27,16 @@ def _get_active_config() -> dict:
 
 def _get_client() -> OpenAI:
     cfg = _get_active_config()
-    return OpenAI(base_url=cfg["base_url"], api_key=cfg["api_key"])
+    if not cfg["api_key"]:
+        raise VLMError("API key is not set. Please enter your API key in the VLM Settings on Step 1.")
+    return OpenAI(
+        base_url=cfg["base_url"],
+        api_key=cfg["api_key"],
+        default_headers={
+            "HTTP-Referer": "https://github.com/BillSplit",
+            "X-Title": "BillSplit",
+        },
+    )
 
 
 class VLMError(Exception):
@@ -53,11 +62,12 @@ _RECEIPT_PROMPT = (
 def parse_receipt(image_bytes: bytes) -> tuple[list[Item], float]:
     """Send receipt image to VLM and parse into Items + global tax."""
     client = _get_client()
+    cfg = _get_active_config()
     b64_image = base64.b64encode(image_bytes).decode("utf-8")
 
     try:
         response = client.chat.completions.create(
-            model=_get_active_config()["model"],
+            model=cfg["model"],
             messages=[{
                 "role": "user",
                 "content": [
@@ -69,6 +79,8 @@ def parse_receipt(image_bytes: bytes) -> tuple[list[Item], float]:
             temperature=0.1
         )
         raw = response.choices[0].message.content.strip()
+    except VLMError:
+        raise
     except Exception as e:
         raise VLMError(f"VLM API call failed: {e}")
 
